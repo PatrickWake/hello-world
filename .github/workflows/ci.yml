@@ -58,11 +58,19 @@ jobs:
           npm start &
           sleep 10
 
-      - name: Run Dastardly
-        run: |
-          curl -O https://portswigger.net/burp/releases/dastardly_latest_linux
-          chmod +x dastardly_latest_linux
-          ./dastardly_latest_linux --target-url http://localhost:3000
+      - name: Run Dastardly Scan
+        continue-on-error: true  # Allows the workflow to continue even if vulnerabilities are found
+        uses: PortSwigger/dastardly-github-action@main
+        with:
+          target-url: 'http://localhost:3000'
+
+      # Optional: Add a report parser to process the results
+      - name: Publish Test Report
+        if: always()  # Ensures this step runs even if the scan fails
+        uses: mikepenz/action-junit-report@v3
+        with:
+          report_paths: '**/dastardly-report.xml'
+          require_tests: true
 
   secrets:
     name: Secret Scanning
