@@ -18,7 +18,8 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
-        ...globals.es2021
+        ...globals.es2021,
+        _N_E: "readonly",
       },
       parser: tsParser,
       parserOptions: {
@@ -27,7 +28,6 @@ export default [
         ecmaFeatures: {
           jsx: true,
         },
-        project: "./tsconfig.json"
       },
     },
     plugins: {
