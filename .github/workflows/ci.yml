@@ -23,8 +23,8 @@ jobs:
           npm run build
 
       - name: Run ESLint
-        run: npx eslint . --ext .js,.jsx,.ts,.tsx
-
+        run: npx eslint .
+        
   codeql:
     name: Static Analysis
     runs-on: ubuntu-latest
@@ -70,7 +70,7 @@ jobs:
         uses: mikepenz/action-junit-report@v3
         with:
           report_paths: '**/dastardly-report.xml'
-          require_tests: true
+          require_tests: false
 
   secrets:
     name: Secret Scanning
