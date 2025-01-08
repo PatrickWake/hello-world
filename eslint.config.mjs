@@ -7,9 +7,19 @@ import tsParser from "@typescript-eslint/parser";
 export default [
   {
     files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"],
-    ignores: ["node_modules/", ".next/", "build/"],
+    ignores: [
+      "node_modules/**",
+      ".next/**",
+      "build/**",
+      "dist/**",
+      "coverage/**"
+    ],
     languageOptions: {
-      globals: { ...globals.browser, ...globals.node },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.es2021
+      },
       parser: tsParser,
       parserOptions: {
         ecmaVersion: "latest",
@@ -17,6 +27,7 @@ export default [
         ecmaFeatures: {
           jsx: true,
         },
+        project: "./tsconfig.json"
       },
     },
     plugins: {
@@ -33,6 +44,13 @@ export default [
       ...pluginJs.configs.recommended.rules,
       ...pluginReact.configs.flat.recommended.rules,
       ...tsPlugin.configs["recommended"].rules,
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": ["error", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }],
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off"
     },
   },
 ];
