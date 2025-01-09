@@ -12,6 +12,12 @@ jobs:
   build:
     name: Build and Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      issues: write
+      actions: read
 
     steps:
       - name: Checkout code
