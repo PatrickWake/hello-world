@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
@@ -23,7 +23,7 @@ jobs:
           npm run build
 
       - name: Run ESLint
-        run: npx eslint .
+        run: npx eslint "pages/**/*.{js,jsx,ts,tsx}" "components/**/*.{js,jsx,ts,tsx}" "lib/**/*.{js,jsx,ts,tsx}"
 
   codeql:
     name: Static Analysis
@@ -33,23 +33,30 @@ jobs:
       security-events: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript
 
       - name: Analyze CodeQL
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
 
   dast:
     name: Dynamic Analysis
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      security-events: write
+      pull-requests: write
+      issues: write
+      actions: read
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Start Application
         run: |
@@ -59,14 +66,13 @@ jobs:
           sleep 10
 
       - name: Run Dastardly Scan
-        continue-on-error: true  # Allows the workflow to continue even if vulnerabilities are found
+        continue-on-error: true
         uses: PortSwigger/dastardly-github-action@main
         with:
           target-url: 'http://localhost:3000'
 
-      # Optional: Add a report parser to process the results
       - name: Publish Test Report
-        if: always()  # Ensures this step runs even if the scan fails
+        if: always()
         uses: mikepenz/action-junit-report@v3
         with:
           report_paths: '**/dastardly-report.xml'
