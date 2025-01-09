@@ -27,7 +27,11 @@ jobs:
         run: |
           npm install
           npm install -D eslint-formatter-junit
-          npm run build
+
+      - name: Build project
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+        run: npm run build
 
       - name: Run ESLint
         run: npx eslint "pages/**/*.{js,jsx,ts,tsx}" --format junit --output-file eslint-report.xml
@@ -81,34 +85,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Start Application
-        run: |
-          npm install
-          npm run build
-          npm start &
-          echo "Waiting for application to start..."
-          # Wait for up to 30 seconds for the application to be ready
-          for i in {1..30}; do
-            if curl -s http://localhost:3000 > /dev/null; then
-              echo "Application is running!"
-              break
-            fi
-            echo "Waiting... ($i/30)"
-            sleep 1
-          done
+      - name: Install dependencies
+        run: npm install
 
-      - name: Run Dastardly Scan
-        continue-on-error: true
+      - name: Build project
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+        run: npm run build
+
+      - name: Serve Static Files
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+        run: |
+          npx serve out -l 3000 &
+          echo "Waiting for application to start..."
+          sleep 10
+
+      - name: Run Dastardly scan
         uses: PortSwigger/dastardly-github-action@main
         with:
           target-url: 'http://localhost:3000'
 
-      - name: Publish Test Report
-        if: always()
-        uses: mikepenz/action-junit-report@v3
+      - name: Upload scan results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
         with:
-          report_paths: '**/dastardly-report.xml'
-          require_tests: false
+          name: dastardly-report
+          path: dastardly-report.html
 
   secrets:
     name: Secret Scanning
