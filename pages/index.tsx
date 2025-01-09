@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { gsap } from 'gsap';
 import { SignedIn, SignedOut } from '@clerk/nextjs';
+import Link from 'next/link';
 
 export default function Home() {
   useEffect(() => {
@@ -25,18 +26,18 @@ export default function Home() {
             Sign up to access exclusive features and content.
           </p>
           <div className="hero-text space-x-4">
-            <a
+            <Link
               href="/sign-up"
               className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
             >
               Get Started
-            </a>
-            <a
+            </Link>
+            <Link
               href="/sign-in"
               className="text-blue-500 hover:text-blue-600 transition-colors"
             >
               Sign In
-            </a>
+            </Link>
           </div>
         </div>
       </SignedOut>
