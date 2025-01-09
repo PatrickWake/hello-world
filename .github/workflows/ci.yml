@@ -86,7 +86,16 @@ jobs:
           npm install
           npm run build
           npm start &
-          sleep 10
+          echo "Waiting for application to start..."
+          # Wait for up to 30 seconds for the application to be ready
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "Application is running!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 1
+          done
 
       - name: Run Dastardly Scan
         continue-on-error: true
@@ -111,3 +120,30 @@ jobs:
 
       - name: Run Gitleaks
         uses: zricethezav/gitleaks-action@v2
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: [build, codeql, dast, secrets]  # Only deploy if other jobs pass
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'  # Only deploy on main branch pushes
+    
+    permissions:
+      contents: read
+      deployments: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy .next --project-name=hello-world-app

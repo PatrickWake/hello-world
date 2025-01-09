@@ -20,7 +20,8 @@
     "eslint": "latest",
     "eslint-plugin-react": "^7.37.3",
     "eslint-plugin-security": "latest",
-    "globals": "^15.14.0"
+    "globals": "^15.14.0",
+    "wrangler": "^3.100.0"
   },
   "type": "module"
 }
