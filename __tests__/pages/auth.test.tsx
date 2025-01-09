@@ -1,7 +1,8 @@
+import React from 'react'
 import { render, screen } from '@testing-library/react'
 import { useRouter } from 'next/router'
 import { useAuth } from '@clerk/nextjs'
-import Members from '@/pages/members'
+import Members from '../../pages/members'
 
 // Mock Next.js router
 jest.mock('next/router', () => ({
