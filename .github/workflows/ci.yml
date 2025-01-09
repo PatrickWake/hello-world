@@ -119,10 +119,11 @@ jobs:
           echo "Application is accessible"
 
       - name: Run Dastardly scan
-        uses: PortSwigger/dastardly-github-action@main
-        with:
-          target-url: 'http://webapp:80'
-          network: dast-network
+        run: |
+          docker run --rm --network dast-network \
+            -v ${{ github.workspace }}:/scan \
+            public.ecr.aws/portswigger/dastardly:latest \
+            --target-url http://webapp:80
 
       - name: Upload scan results
         uses: actions/upload-artifact@v4
