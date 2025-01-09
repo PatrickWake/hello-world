@@ -93,13 +93,19 @@ jobs:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
         run: npm run build
 
-      - name: Serve Static Files
-        env:
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      - name: Create Docker network
+        run: docker network create dast-network
+
+      - name: Serve Static Files in Docker
         run: |
-          npx serve out -l 3000 &
-          echo "Waiting for application to start..."
-          # Wait for the server to be ready
+          docker run --network dast-network \
+            --name webapp \
+            -v ${{ github.workspace }}/out:/usr/share/nginx/html:ro \
+            -p 3000:80 \
+            -d nginx:alpine
+
+      - name: Wait for application
+        run: |
           timeout 30 bash -c 'while ! curl -s http://localhost:3000 > /dev/null; do sleep 1; done'
           echo "Application is running"
 
@@ -115,7 +121,8 @@ jobs:
       - name: Run Dastardly scan
         uses: PortSwigger/dastardly-github-action@main
         with:
-          target-url: 'http://localhost:3000'
+          target-url: 'http://webapp:80'
+          network: dast-network
 
       - name: Upload scan results
         uses: actions/upload-artifact@v4
