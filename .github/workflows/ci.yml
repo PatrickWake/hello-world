@@ -58,13 +58,6 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:javascript"
-          output: sarif-results
-
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: sarif-results/javascript.sarif
 
   dast:
     name: Dynamic Analysis
