@@ -1,0 +1,55 @@
+version: 2
+updates:
+  # NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    # Security updates
+    security-updates-enabled: true
+    # Limit number of open PRs
+    open-pull-requests-limit: 5
+    # Group dependencies
+    groups:
+      nextjs:
+        patterns:
+          - "next"
+          - "@next/*"
+      react-core:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      typescript-eslint:
+        patterns:
+          - "@typescript-eslint/*"
+          - "typescript"
+    # Labels for better organization
+    labels:
+      - "dependencies"
+      - "npm"
+    # Version update configuration
+    versioning-strategy:
+      - dependency-type: "all"
+        update-type: "version-update:semver-patch"  # Auto-merge patch updates
+    # Ignore certain dependencies
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]  # Only ignore major Next.js updates
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    open-pull-requests-limit: 5 
