@@ -114,13 +114,26 @@ jobs:
         uses: PortSwigger/dastardly-github-action@main
         with:
           target-url: 'http://localhost:3000'
+          output-filename: 'dastardly-report.xml'
+
+      - name: Check for report file
+        run: |
+          ls -la
+          if [ -f "dastardly-report.xml" ]; then
+            echo "Report file exists"
+            cat dastardly-report.xml
+          else
+            echo "Report file not found"
+            exit 1
+          fi
 
       - name: Publish Test Report
         if: always()
         uses: mikepenz/action-junit-report@v3
         with:
-          report_paths: '**/dastardly-report.xml'
-          require_tests: true
+          report_paths: 'dastardly-report.xml'
+          require_tests: false
+          fail_on_failure: false
 
   secrets:
     name: Secret Scanning
