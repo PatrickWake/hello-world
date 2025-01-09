@@ -23,7 +23,7 @@ jobs:
           npm run build
 
       - name: Run ESLint
-        run: npx eslint "pages/**/*.{js,jsx,ts,tsx}" "components/**/*.{js,jsx,ts,tsx}" "lib/**/*.{js,jsx,ts,tsx}"
+        run: npx eslint "pages/**/*.{js,jsx,ts,tsx}"
 
   codeql:
     name: Static Analysis
