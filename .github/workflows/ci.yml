@@ -23,7 +23,17 @@ jobs:
           npm run build
 
       - name: Run ESLint
-        run: npx eslint "pages/**/*.{js,jsx,ts,tsx}"
+        run: npx eslint "pages/**/*.{js,jsx,ts,tsx}" --format junit --output-file eslint-report.xml
+        continue-on-error: true
+
+      - name: Publish ESLint Report
+        if: always()
+        uses: mikepenz/action-junit-report@v3
+        with:
+          report_paths: 'eslint-report.xml'
+          check_name: ESLint Test Report
+          fail_on_failure: false
+          require_tests: false
 
   codeql:
     name: Static Analysis
@@ -31,6 +41,10 @@ jobs:
     permissions:
       contents: read
       security-events: write
+      actions: read
+      checks: write
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,6 +56,15 @@ jobs:
 
       - name: Analyze CodeQL
         uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript"
+          output: sarif-results
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: sarif-results/javascript.sarif
 
   dast:
     name: Dynamic Analysis
