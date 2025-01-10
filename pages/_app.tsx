@@ -1,15 +1,18 @@
 import React from 'react';
-import { ClerkProvider } from '@clerk/nextjs';
+import { AuthProvider } from '../lib/auth/AuthContext';
+import { NotificationProvider } from '../lib/notifications/NotificationContext';
 import Layout from '../components/Layout';
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <ClerkProvider>
-      <Layout>
-        <Component {...pageProps} />
-      </Layout>
-    </ClerkProvider>
+    <NotificationProvider>
+      <AuthProvider>
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      </AuthProvider>
+    </NotificationProvider>
   );
 } 

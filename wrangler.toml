@@ -1,9 +1,15 @@
-name = "hello-world-app"
-compatibility_date = "2024-01-01"
+name = "your-app-name"
+compatibility_date = "2023-01-01"
+
+main = "./src/index.ts"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "auth-db"
+database_id = "15ab4522-7d60-4925-b177-9ba4a1eefb1b"
 
 [build]
 command = "npm run build"
-output_directory = "out"
 
 [site]
 bucket = "out" 

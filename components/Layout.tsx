@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
 import { gsap } from 'gsap';
-import { UserButton, SignedIn, SignedOut } from '@clerk/nextjs';
 import Link from 'next/link';
+import { useAuth } from '../lib/auth';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const { user, signOut } = useAuth();
+
   useEffect(() => {
-    // GSAP animation for page load
     gsap.from('main', {
       opacity: 0,
       y: 20,
@@ -25,23 +26,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             </div>
             <div className="flex items-center">
-              <SignedIn>
-                <UserButton afterSignOutUrl="/" />
-              </SignedIn>
-              <SignedOut>
-                <Link 
-                  href="/sign-in"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2"
-                >
-                  Sign in
-                </Link>
-                <Link 
-                  href="/sign-up"
-                  className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                >
-                  Sign up
-                </Link>
-              </SignedOut>
+              {user ? (
+                <div className="flex items-center space-x-4">
+                  <span>{user.email}</span>
+                  <button
+                    onClick={signOut}
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Link 
+                    href="/auth/signin"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2"
+                  >
+                    Sign in
+                  </Link>
+                  <Link 
+                    href="/auth/signup"
+                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
