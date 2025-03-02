@@ -9,6 +9,13 @@ type User = {
   // Add other user properties as needed
 };
 
+// Define response types
+type SignInResponse = {
+  token: string;
+  user: User;
+  sessionId?: string;
+};
+
 type AuthContextType = {
   isAuthenticated: boolean;
   user: User | null;
@@ -120,9 +127,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         );
       }
 
-      const data = await response.json();
-      login(data.token, data.user);
-      return data;
+      const responseData = await response.json();
+      
+      // Validate the response data
+      if (!isValidSignInResponse(responseData)) {
+        throw new Error('Invalid response format from server');
+      }
+      
+      login(responseData.token, responseData.user);
+      return responseData;
     } catch (error) {
       console.error('Sign in error:', error);
       throw error;
@@ -149,14 +162,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         );
       }
 
-      const data = await response.json();
-      login(data.token, data.user);
-      return data;
+      const responseData = await response.json();
+      
+      // Validate the response data
+      if (!isValidSignInResponse(responseData)) {
+        throw new Error('Invalid response format from server');
+      }
+      
+      login(responseData.token, responseData.user);
+      return responseData;
     } catch (error) {
       console.error('Sign up error:', error);
       throw error;
     }
   };
+
+  // Helper function to validate response format
+  function isValidSignInResponse(data: unknown): data is SignInResponse {
+    return (
+      typeof data === 'object' && 
+      data !== null &&
+      'token' in data &&
+      typeof data.token === 'string' &&
+      'user' in data &&
+      typeof data.user === 'object' &&
+      data.user !== null &&
+      'id' in data.user &&
+      'email' in data.user
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ 
