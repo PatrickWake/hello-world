@@ -22,9 +22,9 @@ type AuthContextType = {
   login: (token: string, userData: User) => void;
   logout: () => void;
   signOut: () => void;
-  signIn?: (email: string, password: string) => Promise<void>;
-  signUp?: (email: string, password: string, name?: string) => Promise<void>;
-  loading?: boolean;
+  signIn: (email: string, password: string) => Promise<SignInResponse>;
+  signUp: (email: string, password: string, name?: string) => Promise<SignInResponse>;
+  loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -33,6 +33,13 @@ const AuthContext = createContext<AuthContextType>({
   login: () => {},
   logout: () => {},
   signOut: () => {},
+  signIn: async () => {
+    throw new Error('Not implemented');
+  },
+  signUp: async () => {
+    throw new Error('Not implemented');
+  },
+  loading: false
 });
 
 console.log('Loading AuthContext.tsx');
@@ -108,7 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = logout;
 
   // Add signIn method to match what's used in signin.tsx
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<SignInResponse> => {
     try {
       const response = await fetch('/api/auth/signin', {
         method: 'POST',
@@ -143,7 +150,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Add signUp method to match what's used in signup.tsx
-  const signUp = async (email: string, password: string, name?: string) => {
+  const signUp = async (email: string, password: string, name?: string): Promise<SignInResponse> => {
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
