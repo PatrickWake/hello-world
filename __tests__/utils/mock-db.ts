@@ -1,4 +1,6 @@
-export class MockDB {
+import type { D1Database } from '@cloudflare/workers-types';
+
+export class MockDB implements D1Database {
   async prepare(query: string) {
     return {
       bind: (...params: any[]) => ({
@@ -9,15 +11,15 @@ export class MockDB {
     };
   }
 
-  async batch<T>(queries: string[]): Promise<T[]> {
+  async batch<T>(statements: string[]): Promise<T[]> {
     return [];
+  }
+
+  async exec(query: string): Promise<void> {
+    return;
   }
 }
 
-// Export a mock DB instance to use in tests
 export const mockDB = new MockDB();
 
-// Mock the DB module
-jest.mock('../../lib/db', () => ({
-  DB: mockDB
-})); 
+// No need to mock the DB module here since we're setting it in jest.setup.js 
