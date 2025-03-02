@@ -7,12 +7,10 @@ import type { AppProps } from 'next/app';
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <NotificationProvider>
-      <AuthProvider>
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
-      </AuthProvider>
-    </NotificationProvider>
+    <AuthProvider>
+      <Layout>
+        <Component {...pageProps} />
+      </Layout>
+    </AuthProvider>
   );
 } 

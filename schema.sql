@@ -1,5 +1,4 @@
 -- Drop existing tables if they exist
-DROP TABLE IF EXISTS activity_logs;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS users;
 

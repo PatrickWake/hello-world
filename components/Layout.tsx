@@ -1,64 +1,71 @@
-import React, { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import Link from 'next/link';
 import { useAuth } from '../lib/auth';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    gsap.from('main', {
-      opacity: 0,
-      y: 20,
-      duration: 1,
-      ease: 'power3.out'
-    });
+    if (headerRef.current) {
+      gsap.from(headerRef.current, {
+        y: -100,
+        opacity: 0,
+        duration: 0.8,
+        ease: 'power3.out'
+      });
+    }
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <Link href="/" className="flex items-center">
-                <span className="text-xl font-bold">Your App</span>
-              </Link>
-            </div>
-            <div className="flex items-center">
-              {user ? (
-                <div className="flex items-center space-x-4">
-                  <span>{user.email}</span>
-                  <button
-                    onClick={signOut}
-                    className="text-gray-700 hover:text-gray-900 px-3 py-2"
-                  >
-                    Sign out
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <Link 
-                    href="/auth/signin"
-                    className="text-gray-700 hover:text-gray-900 px-3 py-2"
-                  >
-                    Sign in
-                  </Link>
-                  <Link 
-                    href="/auth/signup"
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                  >
-                    Sign up
-                  </Link>
-                </>
-              )}
-            </div>
+    <div className="min-h-screen flex flex-col">
+      <header ref={headerRef} className="bg-white shadow-md">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="text-xl font-bold">
+            Your App
+          </Link>
+          
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <>
+                <span className="text-gray-700">Welcome, {user.email}</span>
+                <button
+                  onClick={signOut}
+                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/signin"
+                  className="text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
-        </div>
-      </nav>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        </nav>
+      </header>
+
+      <main className="flex-grow">
         {children}
       </main>
+
+      <footer className="bg-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-center">
+          <p className="text-gray-500">&copy; 2024 Your App. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 } 

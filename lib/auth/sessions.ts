@@ -1,10 +1,11 @@
+import type { D1Database } from '@cloudflare/workers-types';
+
 interface Session {
   id: string;
   userId: string;
   token: string;
-  created_at: Date;
-  expires_at: Date;
-  last_active: Date;
+  expiresAt: string;
+  createdAt: string;
 }
 
 export class SessionStore {
@@ -16,95 +17,72 @@ export class SessionStore {
 
   async createSession(userId: string, token: string): Promise<Session> {
     const id = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
 
-    await this.db
-      .prepare(`
-        INSERT INTO sessions (id, user_id, token, expires_at)
-        VALUES (?, ?, ?, ?)
-      `)
-      .bind(id, userId, token, expiresAt.toISOString())
-      .run();
+    await this.db.prepare(
+      `INSERT INTO sessions (id, user_id, token, expires_at, created_at)
+       VALUES (?, ?, ?, ?, ?)`
+    )
+    .bind(id, userId, token, expiresAt.toISOString(), now.toISOString())
+    .run();
 
-    const session = await this.getSession(id);
-    if (!session) throw new Error('Failed to create session');
-    
-    return session;
-  }
-
-  async getSession(sessionId: string): Promise<Session | null> {
-    const result = await this.db
-      .prepare('SELECT * FROM sessions WHERE id = ?')
-      .bind(sessionId)
-      .first();
-
-    if (!result) return null;
-
-    const session = this.mapSession(result);
-    if (!this.isSessionValid(session)) {
-      await this.invalidateSession(sessionId);
-      return null;
-    }
-
-    await this.updateLastActive(sessionId);
-    return session;
-  }
-
-  async getSessionByToken(token: string): Promise<Session | null> {
-    const result = await this.db
-      .prepare('SELECT * FROM sessions WHERE token = ?')
-      .bind(token)
-      .first();
-
-    if (!result) return null;
-
-    const session = this.mapSession(result);
-    if (!this.isSessionValid(session)) {
-      await this.invalidateSession(session.id);
-      return null;
-    }
-
-    await this.updateLastActive(session.id);
-    return session;
-  }
-
-  async invalidateSession(sessionId: string): Promise<void> {
-    await this.db
-      .prepare('DELETE FROM sessions WHERE id = ?')
-      .bind(sessionId)
-      .run();
-  }
-
-  async cleanupExpiredSessions(): Promise<void> {
-    await this.db
-      .prepare('DELETE FROM sessions WHERE expires_at < CURRENT_TIMESTAMP')
-      .run();
-  }
-
-  private async updateLastActive(sessionId: string): Promise<void> {
-    await this.db
-      .prepare(`
-        UPDATE sessions 
-        SET last_active = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `)
-      .bind(sessionId)
-      .run();
-  }
-
-  private isSessionValid(session: Session): boolean {
-    return new Date() < session.expires_at;
-  }
-
-  private mapSession(row: any): Session {
     return {
-      id: row.id,
-      userId: row.user_id,
-      token: row.token,
-      created_at: new Date(row.created_at),
-      expires_at: new Date(row.expires_at),
-      last_active: new Date(row.last_active)
+      id,
+      userId,
+      token,
+      expiresAt: expiresAt.toISOString(),
+      createdAt: now.toISOString()
     };
+  }
+
+  async getSession(id: string): Promise<Session | null> {
+    const result = await this.db.prepare(
+      `SELECT * FROM sessions WHERE id = ? AND expires_at > datetime('now')`
+    )
+    .bind(id)
+    .first<Session>();
+
+    return result || null;
+  }
+
+  async deleteSession(id: string): Promise<void> {
+    await this.db.prepare(
+      `DELETE FROM sessions WHERE id = ?`
+    )
+    .bind(id)
+    .run();
+  }
+
+  async cleanExpiredSessions(): Promise<void> {
+    await this.db.prepare(
+      `DELETE FROM sessions WHERE expires_at <= datetime('now')`
+    )
+    .run();
+  }
+
+  async updateSessionToken(id: string, newToken: string): Promise<void> {
+    await this.db.prepare(
+      `UPDATE sessions 
+       SET token = ?, 
+           expires_at = datetime('now', '+24 hours')
+       WHERE id = ?`
+    )
+    .bind(newToken, id)
+    .run();
+  }
+
+  async getUserSessions(userId: string): Promise<Session[]> {
+    const results = await this.db.prepare(
+      `SELECT * FROM sessions 
+       WHERE user_id = ? 
+       AND expires_at > datetime('now')
+       ORDER BY created_at DESC`
+    )
+    .bind(userId)
+    .all<Session>();
+
+    return results.results || [];
   }
 }
 

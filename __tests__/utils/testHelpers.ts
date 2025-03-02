@@ -1,6 +1,7 @@
 import { db } from '../../lib/db/users';
 import { createToken } from '../../lib/auth/utils';
 import { UserRole } from '../../lib/auth/roles';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 export async function createTestUser(role: UserRole = UserRole.USER) {
   const email = `test-${Math.random()}@example.com`;
@@ -15,32 +16,39 @@ export async function createTestUser(role: UserRole = UserRole.USER) {
   };
 }
 
-export function createMockRequest(overrides = {}) {
+export function createMockRequest(options: {
+  method?: string;
+  headers?: Record<string, string>;
+  cookies?: Record<string, string>;
+  body?: any;
+  query?: Record<string, string>;
+} = {}): NextApiRequest {
   return {
-    headers: {},
-    cookies: {},
-    body: {},
-    method: 'GET',
-    ...overrides
-  };
+    method: options.method || 'GET',
+    headers: {
+      'content-type': 'application/json',
+      ...options.headers,
+    },
+    cookies: options.cookies || {},
+    body: options.body || {},
+    query: options.query || {},
+    env: {},
+    socket: {
+      destroy: jest.fn(),
+      setTimeout: jest.fn(),
+      setNoDelay: jest.fn(),
+      setKeepAlive: jest.fn(),
+    } as any,
+  } as NextApiRequest;
 }
 
-export function createMockResponse() {
-  const res: any = {
-    statusCode: 200,
-    headers: new Map(),
-    cookies: new Map(),
-    status: function(code: number) {
-      this.statusCode = code;
-      return this;
-    },
+export function createMockResponse(): NextApiResponse {
+  const res = {
+    status: jest.fn().mockReturnThis(),
     json: jest.fn(),
-    setHeader: function(key: string, value: string) {
-      this.headers.set(key, value);
-    },
-    getHeader: function(key: string) {
-      return this.headers.get(key);
-    }
+    setHeader: jest.fn(),
+    getHeader: jest.fn(),
+    end: jest.fn(),
   };
-  return res;
+  return res as unknown as NextApiResponse;
 } 

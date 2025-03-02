@@ -1,72 +1,89 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { db } from '../db/users';
-import { sessionStore } from './sessions';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+interface User {
+  id: string;
+  email: string;
+  role: string;
+}
+
+interface AuthResponse {
+  token: string;
+  sessionId: string;
+  user: User;
+}
 
 interface AuthContextType {
-  user: any;
+  user: User | null;
   loading: boolean;
+  error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any>(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        const sessionId = localStorage.getItem('sessionId');
+
+        if (!token || !sessionId) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json() as { user: User };
+          setUser(data.user);
+        } else {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('sessionId');
+        }
+      } catch (error) {
+        setError('Authentication check failed');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     checkAuth();
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const sessionId = localStorage.getItem('sessionId');
-      
-      if (!token || !sessionId) {
-        setLoading(false);
-        return;
-      }
-
-      const session = await sessionStore.getSession(sessionId);
-      if (!session) {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('sessionId');
-        setLoading(false);
-        return;
-      }
-
-      const userData = await db.findUserById(session.userId);
-      if (userData) {
-        const { password: _, ...userWithoutPassword } = userData;
-        setUser(userWithoutPassword);
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const signIn = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/signin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
+    try {
+      setError(null);
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
 
-    if (!response.ok) {
-      throw new Error('Authentication failed');
+      if (!response.ok) {
+        throw new Error('Authentication failed');
+      }
+
+      const { token, sessionId, user } = await response.json();
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('sessionId', sessionId);
+      setUser(user);
+    } catch (error) {
+      setError('Authentication failed');
     }
-
-    const { token, sessionId, user } = await response.json();
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('sessionId', sessionId);
-    setUser(user);
   };
 
   const signUp = async (email: string, password: string, name?: string) => {
@@ -98,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, error, signIn, signOut, signUp }}>
       {children}
     </AuthContext.Provider>
   );
