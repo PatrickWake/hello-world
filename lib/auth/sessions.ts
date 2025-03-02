@@ -1,89 +1,81 @@
-import type { D1Database } from '@cloudflare/workers-types';
+import { D1Database } from '@cloudflare/workers-types';
 
-interface Session {
-  id: string;
-  userId: string;
-  token: string;
-  expiresAt: string;
-  createdAt: string;
-}
+// Get the database from environment or create a mock for development
+const getDatabase = (): D1Database => {
+  // In a real environment, this would come from Cloudflare Workers bindings
+  // For local development, we'll create a mock or use a local instance
+  if (process.env.NODE_ENV === 'development') {
+    // Return a mock D1Database for development
+    return {
+      prepare: () => ({
+        bind: () => ({
+          all: async () => [],
+          first: async () => null,
+          run: async () => ({ success: true }),
+        }),
+      }),
+      exec: async () => ({ results: [] }),
+      batch: async () => [{ results: [] }],
+      dump: async () => new Uint8Array(),
+    } as unknown as D1Database;
+  }
+  
+  // In production, this would be provided by Cloudflare
+  // This is a placeholder that should be replaced with actual implementation
+  return (global as any).DB as D1Database;
+};
 
 export class SessionStore {
   private db: D1Database;
 
-  constructor(db: D1Database) {
-    this.db = db;
+  constructor(db?: D1Database) {
+    this.db = db || getDatabase();
   }
 
-  async createSession(userId: string, token: string): Promise<Session> {
-    const id = crypto.randomUUID();
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
+  async createSession(userId: string, token: string): Promise<string> {
+    const sessionId = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 1); // 24 hours from now
 
-    await this.db.prepare(
-      `INSERT INTO sessions (id, user_id, token, expires_at, created_at)
-       VALUES (?, ?, ?, ?, ?)`
-    )
-    .bind(id, userId, token, expiresAt.toISOString(), now.toISOString())
-    .run();
+    await this.db
+      .prepare(
+        'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)'
+      )
+      .bind(sessionId, userId, token, expiresAt.toISOString())
+      .run();
 
-    return {
-      id,
-      userId,
-      token,
-      expiresAt: expiresAt.toISOString(),
-      createdAt: now.toISOString()
-    };
+    return sessionId;
   }
 
-  async getSession(id: string): Promise<Session | null> {
-    const result = await this.db.prepare(
-      `SELECT * FROM sessions WHERE id = ? AND expires_at > datetime('now')`
-    )
-    .bind(id)
-    .first<Session>();
+  async getSession(sessionId: string) {
+    const session = await this.db
+      .prepare('SELECT * FROM sessions WHERE id = ? AND expires_at > datetime()')
+      .bind(sessionId)
+      .first();
 
-    return result || null;
+    return session;
   }
 
-  async deleteSession(id: string): Promise<void> {
-    await this.db.prepare(
-      `DELETE FROM sessions WHERE id = ?`
-    )
-    .bind(id)
-    .run();
+  async deleteSession(sessionId: string) {
+    await this.db
+      .prepare('DELETE FROM sessions WHERE id = ?')
+      .bind(sessionId)
+      .run();
   }
 
-  async cleanExpiredSessions(): Promise<void> {
-    await this.db.prepare(
-      `DELETE FROM sessions WHERE expires_at <= datetime('now')`
-    )
-    .run();
+  async deleteUserSessions(userId: string) {
+    await this.db
+      .prepare('DELETE FROM sessions WHERE user_id = ?')
+      .bind(userId)
+      .run();
   }
 
-  async updateSessionToken(id: string, newToken: string): Promise<void> {
-    await this.db.prepare(
-      `UPDATE sessions 
-       SET token = ?, 
-           expires_at = datetime('now', '+24 hours')
-       WHERE id = ?`
-    )
-    .bind(newToken, id)
-    .run();
-  }
-
-  async getUserSessions(userId: string): Promise<Session[]> {
-    const results = await this.db.prepare(
-      `SELECT * FROM sessions 
-       WHERE user_id = ? 
-       AND expires_at > datetime('now')
-       ORDER BY created_at DESC`
-    )
-    .bind(userId)
-    .all<Session>();
-
-    return results.results || [];
+  async cleanExpiredSessions() {
+    await this.db
+      .prepare('DELETE FROM sessions WHERE expires_at <= datetime()')
+      .run();
   }
 }
 
-export const sessionStore = new SessionStore(DB); 
+// Create a singleton instance with a lazy-loaded database
+export const sessionStore = new SessionStore(); 
