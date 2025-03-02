@@ -1,6 +1,6 @@
+import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
-import { AuthProvider } from '../../lib/auth/AuthContext';
-import { ReactElement } from 'react';
+import { AuthProvider } from '@/lib/auth/AuthContext';
 
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
