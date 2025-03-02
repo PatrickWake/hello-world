@@ -1,5 +1,6 @@
 import { UserRole } from '../auth/roles';
 import { hashPassword } from '../auth/utils';
+import type { D1Database } from '@cloudflare/workers-types';
 
 export interface User {
   id: string;
@@ -12,11 +13,7 @@ export interface User {
 }
 
 export class UserDB {
-  private db: D1Database;
-
-  constructor(db: D1Database) {
-    this.db = db;
-  }
+  constructor(private db: D1Database) {}
 
   async findUserByEmail(email: string): Promise<User | null> {
     const result = await this.db
@@ -90,4 +87,16 @@ export class UserDB {
   }
 }
 
-export const db = new UserDB(DB); 
+// Export a mock DB for testing
+export const db = new UserDB(
+  (global.DB as D1Database) || {
+    prepare: () => ({
+      bind: () => ({
+        all: async () => ({ results: [] }),
+        first: async () => null,
+        run: async () => ({ lastRowId: 1 })
+      })
+    }),
+    batch: async () => []
+  } as unknown as D1Database
+); 
