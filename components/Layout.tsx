@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import Link from 'next/link';
-import { useAuth } from '../lib/auth';
+import { useAuth } from '../lib/auth/AuthContext';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -40,13 +40,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             ) : (
               <>
                 <Link
-                  href="/signin"
+                  href="/auth/signin"
                   className="text-gray-700 hover:text-gray-900 transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
-                  href="/signup"
+                  href="/auth/signup"
                   className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
                 >
                   Sign Up

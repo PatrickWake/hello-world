@@ -1,8 +1,8 @@
-import { render } from '@testing-library/react';
+import { render, RenderOptions } from '@testing-library/react';
 import { AuthProvider } from '../../lib/auth/AuthContext';
-import { ReactNode } from 'react';
+import { ReactElement } from 'react';
 
-const AllTheProviders = ({ children }: { children: ReactNode }) => {
+const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthProvider>
       {children}
@@ -10,11 +10,11 @@ const AllTheProviders = ({ children }: { children: ReactNode }) => {
   );
 };
 
-const customRender = (ui: React.ReactElement, options = {}) =>
-  render(ui, { wrapper: AllTheProviders, ...options });
+const customRender = (
+  ui: ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>
+) => render(ui, { wrapper: AllTheProviders, ...options });
 
 // re-export everything
 export * from '@testing-library/react';
-
-// override render method
 export { customRender as render }; 
