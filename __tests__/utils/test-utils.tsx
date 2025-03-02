@@ -1,12 +1,16 @@
 import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
-import { AuthProvider } from '@/lib/auth/AuthContext';
+
+// Create a mock AuthProvider
+const MockAuthProvider = ({ children }: { children: React.ReactNode }) => {
+  return <div data-testid="mock-auth-provider">{children}</div>;
+};
 
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
-    <AuthProvider>
+    <MockAuthProvider>
       {children}
-    </AuthProvider>
+    </MockAuthProvider>
   );
 };
 
