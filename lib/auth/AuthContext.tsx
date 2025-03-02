@@ -1,14 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { verifyToken } from './utils';
 
-// Update the AuthContextType to include user
+// Define a proper User type
+type User = {
+  id: string;
+  email: string;
+  name?: string;
+  // Add other user properties as needed
+};
+
 type AuthContextType = {
   isAuthenticated: boolean;
-  user: any | null; // You might want to define a proper User type
-  login: (token: string, userData: any) => void;
+  user: User | null;
+  login: (token: string, userData: User) => void;
   logout: () => void;
-  signOut: () => void; // Alias for logout that Layout is using
+  signOut: () => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -23,7 +29,7 @@ console.log('Loading AuthContext.tsx');
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -60,7 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkAuth();
   }, []);
 
-  const login = (token: string, userData: any) => {
+  const login = (token: string, userData: User) => {
     localStorage.setItem('authToken', token);
     setIsAuthenticated(true);
     setUser(userData);
