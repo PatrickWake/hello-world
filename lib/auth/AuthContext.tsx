@@ -112,8 +112,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to sign in');
+        const errorData = await response.json();
+        throw new Error(
+          typeof errorData === 'object' && errorData !== null && 'message' in errorData
+            ? String(errorData.message)
+            : 'Failed to sign in'
+        );
       }
 
       const data = await response.json();
@@ -137,8 +141,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to sign up');
+        const errorData = await response.json();
+        throw new Error(
+          typeof errorData === 'object' && errorData !== null && 'message' in errorData
+            ? String(errorData.message)
+            : 'Failed to sign up'
+        );
       }
 
       const data = await response.json();
