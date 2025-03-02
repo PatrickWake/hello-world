@@ -1,12 +1,15 @@
-import { db } from '../../lib/db/users';
-import { createToken } from '../../lib/auth/utils';
-import { UserRole } from '../../lib/auth/roles';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { MockDB } from './mock-db';
 
-export async function createTestUser(role: UserRole = UserRole.USER) {
+export const testDB = new MockDB();
+
+// Mock the global DB object
+global.DB = testDB;
+
+export function createTestUser(role: UserRole = UserRole.USER) {
   const email = `test-${Math.random()}@example.com`;
-  const user = db.createUser(email, 'password123');
-  db.updateUserRole(user.id, role);
+  const user = testDB.createUser(email, 'password123');
+  testDB.updateUserRole(user.id, role);
   const { token, sessionId } = await createToken(user.id);
   
   return {
@@ -16,39 +19,22 @@ export async function createTestUser(role: UserRole = UserRole.USER) {
   };
 }
 
-export function createMockRequest(options: {
-  method?: string;
-  headers?: Record<string, string>;
-  cookies?: Record<string, string>;
-  body?: any;
-  query?: Record<string, string>;
-} = {}): NextApiRequest {
+export function createMockRequest(overrides = {}) {
   return {
-    method: options.method || 'GET',
-    headers: {
-      'content-type': 'application/json',
-      ...options.headers,
-    },
-    cookies: options.cookies || {},
-    body: options.body || {},
-    query: options.query || {},
-    env: {},
-    socket: {
-      destroy: jest.fn(),
-      setTimeout: jest.fn(),
-      setNoDelay: jest.fn(),
-      setKeepAlive: jest.fn(),
-    } as any,
+    method: 'GET',
+    headers: {},
+    cookies: {},
+    body: {},
+    query: {},
+    ...overrides
   } as NextApiRequest;
 }
 
-export function createMockResponse(): NextApiResponse {
+export function createMockResponse() {
   const res = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn(),
     setHeader: jest.fn(),
-    getHeader: jest.fn(),
-    end: jest.fn(),
-  };
-  return res as unknown as NextApiResponse;
+  } as unknown as NextApiResponse;
+  return res;
 } 

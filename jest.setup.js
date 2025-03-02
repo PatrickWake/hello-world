@@ -1,8 +1,18 @@
 import '@testing-library/jest-dom'
 import { TextEncoder, TextDecoder } from 'util';
+import { MockDB } from './__tests__/utils/mock-db';
 
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
+
+// Set up environment variables
+process.env.JWT_SECRET = 'test_secret';
+
+// Set up global DB mock
+global.DB = new MockDB();
+
+// Import mock DB setup
+import './utils/mock-db';
 
 // Mock jose for JWT handling
 jest.mock('jose', () => ({

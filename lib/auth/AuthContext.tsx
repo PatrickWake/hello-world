@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 interface User {
   id: string;
   email: string;
-  role: string;
+  name?: string;
 }
 
 interface AuthResponse {
@@ -18,7 +18,7 @@ interface AuthContextType {
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, name?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,34 +29,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check for existing session
     const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('authToken');
-        const sessionId = localStorage.getItem('sessionId');
-
-        if (!token || !sessionId) {
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch('/api/auth/me', {
-          headers: {
-            Authorization: `Bearer ${token}`
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          const response = await fetch('/api/auth/session');
+          if (response.ok) {
+            const data: AuthResponse = await response.json();
+            setUser(data.user);
+          } else {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('sessionId');
           }
-        });
-
-        if (response.ok) {
-          const data = await response.json() as { user: User };
-          setUser(data.user);
-        } else {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('sessionId');
+        } catch (err) {
+          console.error('Auth check failed:', err);
         }
-      } catch (error) {
-        setError('Authentication check failed');
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     checkAuth();
@@ -64,54 +54,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      setError(null);
       const response = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
-        throw new Error('Authentication failed');
+        const error = await response.json();
+        throw new Error(error.message || 'Sign in failed');
       }
 
-      const { token, sessionId, user } = await response.json();
+      const data: AuthResponse = await response.json();
+      const { token, sessionId, user } = data;
       localStorage.setItem('authToken', token);
       localStorage.setItem('sessionId', sessionId);
       setUser(user);
-    } catch (error) {
-      setError('Authentication failed');
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign in failed');
+      throw err;
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await fetch('/api/auth/signout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+    } finally {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('sessionId');
+      setUser(null);
+      setError(null);
     }
   };
 
   const signUp = async (email: string, password: string, name?: string) => {
-    const response = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name })
-    });
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, name }),
+      });
 
-    if (!response.ok) {
-      throw new Error('Registration failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Sign up failed');
+      }
+
+      const data: AuthResponse = await response.json();
+      const { token, sessionId, user } = data;
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('sessionId', sessionId);
+      setUser(user);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign up failed');
+      throw err;
     }
-
-    const { token, sessionId, user } = await response.json();
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('sessionId', sessionId);
-    setUser(user);
-  };
-
-  const signOut = async () => {
-    const sessionId = localStorage.getItem('sessionId');
-    if (sessionId) {
-      await sessionStore.invalidateSession(sessionId);
-    }
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('sessionId');
-    setUser(null);
-    router.push('/auth/signin');
   };
 
   return (
